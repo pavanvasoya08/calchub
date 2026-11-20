@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://pavanvasoya08.github.io/calchub/sitemap.xml

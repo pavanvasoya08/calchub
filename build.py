@@ -11,7 +11,7 @@ ADSENSE_CLIENT = ""   # e.g. "ca-pub-1234567890123456"
 AD_SLOT = ""          # your ad unit slot id
 # ================================================
 YEAR = 2026
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "site")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs")
 CATIDX = {name: i + 1 for i, (name, _, _) in enumerate(CATS)}
 CATSHORT = {K.FIN: "Loans", K.TAX: "Business", K.HEALTH: "Health", K.MATH: "Math", K.UNIT: "Units"}
 FONT = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'

@@ -2,7 +2,7 @@ import math
 
 # ================= CONFIG =================
 SITE_NAME = "CalcHub"
-DOMAIN = "https://yourdomain.com"
+DOMAIN = "https://pavanvasoya08.github.io/calchub"
 CONTACT_EMAIL = "yourname@gmail.com"
 CUR = "₹"            # currency symbol used in calculators ("$", "£", "€" ...)
 LOCALE = "en-IN"     # number format: "en-IN" (1,00,000) or "en-US" (100,000)
