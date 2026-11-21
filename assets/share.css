@@ -1,0 +1,13 @@
+.share{margin:18px 0 0;padding:16px 18px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+.share h2{font-size:.95rem;margin:0 0 12px}
+.share .sb{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.share .sb a,.share .sb button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:99px;background:var(--paper);color:var(--dark);font:600 .8rem "Sora",sans-serif;cursor:pointer;text-decoration:none;transition:.15s}
+.share .sb a:hover,.share .sb button:hover{background:var(--cream);border-color:var(--sage);transform:translateY(-1px)}
+.share .sb svg{width:18px;height:18px;flex:none;fill:currentColor}
+.share .sb .wa svg{color:#25d366}.share .sb .fb svg{color:#1877f2}.share .sb .x svg{color:#111}.share .sb .li svg{color:#0a66c2}.share .sb .tg svg{color:#229ed9}
+.share .sb .cp svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:var(--sage-d)}
+.share .sb .ns{background:var(--dark);color:#fff;border-color:var(--dark)}.share .sb .ns svg{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.share .sb .ns:hover{background:#000}
+.share .msg{margin:10px 0 0;min-height:1.2em;font-size:.78rem;color:var(--sage-d);font-weight:600}
+@media(max-width:600px){.share{padding:14px}.share .sb{display:grid;grid-template-columns:1fr 1fr}.share .sb a,.share .sb button{padding:0 10px}.share .sb .ns{grid-column:1/-1}}
+.share .sb [hidden]{display:none!important}
