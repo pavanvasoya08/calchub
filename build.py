@@ -35,16 +35,12 @@ def card(c, small=False):
     return (f'<a class="tcard{" cardsm" if small else ""}" href="{c["slug"]}.html"><div class="im k{k}"><span class="t">{esc(CAT[c["cat"]]["name"].split(" &")[0])}</span><span class="ib">{svg(c["icon"])}</span></div>'
             f'<div class="bd"><b>{esc(c["name"])}</b><small>{esc(c["short"])}</small><span class="go">Open calculator →</span></div></a>')
 
-MENU_GROUPS = [("Money & Property", ["finance", "business", "construction", "shopping"]),
-               ("Health & Learning", ["health", "math", "education"]),
-               ("Everyday Tools", ["datetime", "units", "tech"])]
-
-def nav_html():
-    def col(groups):
-        return "<div class=\"mcol\">" + "".join(
-            f'<h4>{g}</h4>' + "".join(f'<a href="{CAT[k]["page"]}.html">{esc(CAT[k]["name"])}</a>' for k in keys) for g, keys in groups) + "</div>"
+def nav_html(cur=""):
+    def col(cats):
+        return '<div class="mcol">' + "".join(f'<a href="{c["page"]}.html"{" class=on" if c["page"] + ".html" == cur else ""}>{esc(c["name"])}</a>' for c in cats) + "</div>"
+    h = len(CATEGORIES) // 2
     return ('<nav class="main" aria-label="Main"><a href="index.html">Home</a><details class="dd"><summary>Categories</summary>'
-            f'<div class="menu">{col(MENU_GROUPS[:1])}{col(MENU_GROUPS[1:])}</div></details>'
+            f'<div class="menu">{col(CATEGORIES[:h])}{col(CATEGORIES[h:])}</div></details>'
             '<a href="index.html#all">All calculators</a></nav>')
 
 def page(title, desc, fname, body, calc="", head="", schema="", home=False):
@@ -71,7 +67,7 @@ def page(title, desc, fname, body, calc="", head="", schema="", home=False):
 </head><body data-calc="{calc}" data-cur="{CUR}" data-loc="{LOCALE}">
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html"><span class="lg">C</span>alcHub</a>
-{nav_html()}
+{nav_html(fname)}
 <div class="hsearch"><input id="hq" type="text" placeholder="Search calculators" aria-label="Search calculators" autocomplete="off"><div class="sres hidden" id="hres"></div></div></div></header>
 {body}
 {cta}

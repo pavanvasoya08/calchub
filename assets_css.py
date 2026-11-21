@@ -221,3 +221,10 @@ details.dd .menu a:hover{background:none;color:var(--sage-d);text-decoration:und
 CSS += r'''
 @media(max-width:600px){details.dd .menu{gap:18px}}
 '''
+
+CSS += r'''
+details.dd .menu{padding:24px 34px;gap:0 44px}
+details.dd .mcol{gap:14px}
+details.dd .menu a.on{color:var(--sage-d)}
+@media(max-width:600px){details.dd .menu{grid-template-columns:1fr 1fr;gap:0 16px;padding:20px 18px}details.dd .menu a{white-space:normal;font-size:.84rem}}
+'''
