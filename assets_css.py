@@ -186,3 +186,20 @@ input[type=time],input[type=datetime-local]{width:100%;padding:12px 13px;border:
 .blk textarea{min-height:60px;background:#fff;resize:vertical}
 .btn.sm.cp{padding:6px 14px}
 '''
+
+CSS += r'''
+.skip{position:absolute;left:-999px;top:0;background:var(--dark);color:#fff;padding:10px 16px;border-radius:0 0 9px 0;z-index:100}.skip:focus{left:0}
+.crumbs span{color:var(--dark)}
+'''
+
+CSS += r'''
+.pt,.lead,h1,h2,.stat b{overflow-wrap:anywhere}.phead>div:last-child{min-width:0}
+.fld.chk label{min-height:44px}
+input[type=range]{width:100%;min-height:32px;accent-color:var(--sage)}
+@media(max-width:600px){
+ input[type=number],input[type=date],input[type=text],input[type=time],input[type=datetime-local],select,textarea{min-height:44px;font-size:16px}
+ .btn{min-height:44px}.btn.sm{min-height:40px}
+ .phead{padding:22px 18px;gap:14px}.box{padding:18px 14px}
+ .chips a{padding:9px 12px}
+}
+'''

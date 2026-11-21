@@ -1,4 +1,4 @@
-import argparse, datetime, glob, importlib, json, os, shutil, sys
+import argparse, datetime, re, glob, importlib, json, os, shutil, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 from assets_css import CSS
@@ -37,7 +37,7 @@ def card(c, small=False):
 
 def nav_html():
     items = "".join(f'<a href="{c["page"]}.html">{svg(c["icon"])}{esc(c["name"])}</a>' for c in CATEGORIES)
-    return (f'<nav class="main"><a href="index.html">Home</a><details class="dd"><summary>Categories</summary><div class="menu">{items}</div></details>'
+    return (f'<nav class="main" aria-label="Main"><a href="index.html">Home</a><details class="dd"><summary>Categories</summary><div class="menu">{items}</div></details>'
             '<a href="index.html#all">All calculators</a></nav>')
 
 def page(title, desc, fname, body, calc="", head="", schema="", home=False):
@@ -54,11 +54,15 @@ def page(title, desc, fname, body, calc="", head="", schema="", home=False):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#fdf6ee">
 <link rel="canonical" href="{url}">
-<meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="{url}">
+<meta property="og:site_name" content="{SITE_NAME}"><meta property="og:locale" content="en_IN"><meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="{url}"><meta property="og:image" content="{DOMAIN}/og-image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="{SITE_NAME} - free online calculators">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{esc(title)}"><meta name="twitter:description" content="{esc(desc)}"><meta name="twitter:image" content="{DOMAIN}/og-image.png">
 {FONT}<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%238bb494%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 font-family=%27sans-serif%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EC%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="style.css">
 {adsense}{head}{schema}
 </head><body data-calc="{calc}" data-cur="{CUR}" data-loc="{LOCALE}">
+<a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="wrap"><a class="logo" href="index.html"><span class="lg">C</span>alcHub</a>
 {nav_html()}
 <div class="hsearch"><input id="hq" type="text" placeholder="Search calculators" aria-label="Search calculators" autocomplete="off"><div class="sres hidden" id="hres"></div></div></div></header>
@@ -72,30 +76,113 @@ def page(title, desc, fname, body, calc="", head="", schema="", home=False):
 <script src="index.js"></script><script src="app.js"></script>
 </body></html>'''
 
-def faq_schema(faqs):
-    return '<script type="application/ld+json">' + json.dumps({
-        "@context": "https://schema.org", "@type": "FAQPage",
-        "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faqs]},
-        ensure_ascii=False) + "</script>"
+def ld(*objs):
+    return '<script type="application/ld+json">' + json.dumps({"@context": "https://schema.org", "@graph": list(objs)}, ensure_ascii=False, separators=(",", ":")) + "</script>"
+
+def faq_obj(faqs):
+    return {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faqs]}
+
+def crumb_obj(items):
+    return {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": n, "name": nm, "item": u} for n, (nm, u) in enumerate(items, 1)]}
+
+APPCAT = {"finance": "FinanceApplication", "health": "HealthApplication", "math": "EducationalApplication", "education": "EducationalApplication",
+          "business": "BusinessApplication", "datetime": "UtilitiesApplication", "units": "UtilitiesApplication",
+          "construction": "UtilitiesApplication", "shopping": "UtilitiesApplication", "tech": "UtilitiesApplication"}
+
+NOTES = {
+ "finance": ["Results use standard formulas and the values you enter. Banks, brokers and tax authorities may apply fees, rounding rules or different compounding, so real figures can differ.",
+             "Interest rates, tax slabs and investment returns change over time. Market-linked returns (SIP, mutual funds, stocks) are not guaranteed.",
+             "This tool is for estimation and learning. It is not financial, tax or investment advice."],
+ "health": ["Results are general estimates based on population formulas and do not replace a medical examination.",
+            "Age, genetics, muscle mass, medical conditions and medication can all change what is healthy for you.",
+            "This calculator is for information only and is not medical advice. Please consult a doctor or a registered dietitian before making health decisions."],
+ "math": ["The calculator follows standard mathematical definitions. Very large or very small numbers may be shown rounded.",
+          "Check that your inputs use the units or format the tool asks for (for example, a percentage entered as 12, not 0.12)."],
+ "education": ["Grading rules differ between boards, universities and countries. Use your institution's official conversion where one exists.",
+               "Results are for guidance and do not replace an official marksheet or transcript."],
+ "business": ["Results depend on the costs, prices and fee rates you enter. Marketplace fees, GST and platform rules change often, so confirm current rates with the platform or your accountant.",
+              "Figures are estimates for planning and are not accounting, tax or legal advice."],
+ "datetime": ["Dates use the Gregorian calendar and your device's local time zone unless the tool says otherwise.",
+              "Public holidays differ by country and state, so holiday-based results only count the holidays you enter."],
+ "units": ["Conversions use standard factors and are rounded for display. Use more precise figures for engineering or scientific work.",
+           "Some units (such as gallons or bigha) differ by country or region. The tool states which definition it uses."],
+ "construction": ["Quantities are theoretical estimates. Real projects need extra for wastage, site conditions and design changes.",
+                  "Rates for materials, labour, stamp duty and registration vary by city and change often. Confirm with your contractor, engineer or the local registration office."],
+ "shopping": ["Prices, taxes and tariffs differ from shop to shop and state to state. Enter the actual figures from your bill or price tag.",
+              "Results are estimates for comparing options and are not a substitute for an official bill."],
+ "tech": ["Real-world speeds, file sizes and compression vary from the theoretical values used here.",
+          "Text and password tools run entirely in your browser. Nothing you type is uploaded or stored."],
+}
+
+def labels_of(fields):
+    out = re.findall(r'<label[^>]*for="[^"]+"[^>]*>(.*?)</label>', fields)
+    out += [re.sub(r"<[^>]+>", "", m).strip() for m in re.findall(r'<label>\s*<input[^>]*type="checkbox"[^>]*>(.*?)</label>', fields)]
+    return [re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", l)).strip() for l in out if l.strip()]
+
+def topic_of(name):
+    return re.sub(r"\s+(Calculator|Converter)$", "", name)
+
+def keywords(c):
+    name = c["name"].lower()
+    t = topic_of(c["name"]).lower()
+    kind = "converter" if name.endswith("converter") else "calculator"
+    sec = [f"free {name}", f"{name} online", f"{t} formula", f"how to calculate {t}" if kind == "calculator" else f"how to convert {t}",
+           f"{t} with example", f"{t} step by step", f"best {name}", f"{name} no sign up"]
+    if c["cat"] in ("finance", "business", "construction", "shopping"):
+        sec.append(f"{name} India")
+    if kind == "converter":
+        sec.append(f"{t} chart")
+    return name, sec
+
+def seo_title(c):
+    t = f"{c['name']} – Free Online Tool | {SITE_NAME}"
+    return t if len(t) <= 62 else f"{c['name']} | {SITE_NAME}"
+
+def seo_desc(c):
+    d = f"{c['lead'].rstrip('.')}. Free online {c['name'].lower()} with instant results, formula and worked example."
+    if len(d) > 158:
+        d = f"{c['lead'].rstrip('.')}. Free, instant and accurate."
+    return d[:158]
 
 def calc_page(c):
-    same = [x for x in in_cat(c["cat"]) if x["slug"] != c["slug"]]
-    pos = [y["slug"] for y in in_cat(c["cat"])].index(c["slug"])
+    inc = in_cat(c["cat"])
+    same = [x for x in inc if x["slug"] != c["slug"]]
+    pos = [y["slug"] for y in inc].index(c["slug"]) if c["slug"] in [y["slug"] for y in inc] else 0
     if same:
         same = same[pos % len(same):] + same[:pos % len(same)]
     rel = "".join(f'<a href="{r["slug"]}.html">{svg(r["icon"])}{esc(r["name"])}</a>' for r in same[:8])
-    faq = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>" for q, a in c["faqs"])
+    faqs = list(c["faqs"]) + [(f"Is this {c['name'].lower()} free to use?", f"Yes. The {c['name'].lower()} is free, needs no sign-up and runs in your browser, so the numbers you enter are not sent to a server.")]
+    faq = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>" for q, a in faqs)
     cat = CAT[c["cat"]]
     k = CAT_INDEX[c["cat"]]
-    body = f'''<main class="wrap"><div class="main-col"><div class="crumbs"><a href="index.html">Home</a> › <a href="{cat["page"]}.html">{esc(cat["name"])}</a> › {esc(c["name"])}</div>
+    labs = labels_of(c["fields"])
+    shown = ", ".join(f"<b>{esc(l)}</b>" for l in labs[:6]) + (f" and {len(labs) - 6} more option(s)" if len(labs) > 6 else "")
+    steps = ([f"<li>Fill in {shown}.</li>"] if labs else ["<li>Enter your values in the fields above.</li>"]) + [
+        "<li>Every field starts with an example value. Replace it with your own numbers or keep it to see how the tool works.</li>",
+        "<li>Read the result panel. It updates instantly as you type, so there is no button to press.</li>",
+        "<li>Change one value at a time to compare scenarios. Nothing is saved or sent anywhere.</li>"]
+    notes = "".join(f"<li>{esc(n)}</li>" for n in NOTES[c["cat"]])
+    extra = (f'<h2>How to use the {esc(c["name"])}</h2><ol>{"".join(steps)}</ol>'
+             f'<h2>Assumptions and limitations</h2><ul>{notes}</ul>')
+    url = f"{DOMAIN}/{c['slug']}.html"
+    title, desc = seo_title(c), seo_desc(c)
+    schema = ld(
+        {"@type": "WebPage", "@id": url + "#webpage", "url": url, "name": title, "description": desc, "inLanguage": "en", "isPartOf": {"@id": DOMAIN + "/#website"},
+         "breadcrumb": {"@id": url + "#breadcrumb"}, "mainEntity": {"@id": url + "#app"}},
+        {"@type": "WebApplication", "@id": url + "#app", "name": c["name"], "url": url, "description": desc, "applicationCategory": APPCAT[c["cat"]],
+         "operatingSystem": "Any (web browser)", "browserRequirements": "Requires JavaScript", "inLanguage": "en", "isAccessibleForFree": True,
+         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR"}, "publisher": {"@id": DOMAIN + "/#org"}},
+        crumb_obj([("Home", DOMAIN + "/"), (cat["name"], f"{DOMAIN}/{cat['page']}.html"), (c["name"], url)]) | {"@id": url + "#breadcrumb"},
+        faq_obj(faqs))
+    body = f'''<main id="main" class="wrap"><div class="main-col"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a> › <a href="{cat["page"]}.html">{esc(cat["name"])}</a> › <span>{esc(c["name"])}</span></nav>
 <div class="phead k{k}"><div class="pi">{svg(c["icon"])}</div><div><h1 class="pt">{esc(c["h1"])}</h1><p class="lead">{esc(c["lead"])}</p></div></div>
 {ad()}
-<section class="box" id="calc"><div class="row">{c["fields"]}</div><div class="res" id="out"></div></section>
+<section class="box" id="calc" aria-label="{esc(c["name"])}"><div class="row">{c["fields"]}</div><div class="res" id="out" aria-live="polite"></div></section>
 {ad()}
-<article class="txt">{c["body"]}<h2>Frequently asked questions</h2>{faq}
-<h2>More {esc(cat["name"])} calculators</h2><div class="chips">{rel}</div><p style="margin-top:14px"><a class="link" href="{cat["page"]}.html">View all {esc(cat["name"])} calculators →</a></p></article>
+<article class="txt">{c["body"]}{extra}<h2>Frequently asked questions</h2>{faq}
+<h2>Related calculators</h2><div class="chips">{rel}</div><p style="margin-top:14px"><a class="link" href="{cat["page"]}.html">View all {esc(cat["name"])} calculators →</a></p></article>
 {ad()}</div></main>'''
-    return page(c["title"], c["lead"], c["slug"] + ".html", body, c["js"], c["head"], faq_schema(c["faqs"]))
+    return page(title, desc, c["slug"] + ".html", body, c["js"], c["head"], schema)
 
 def category_page(cat):
     k = CAT_INDEX[cat["key"]]
@@ -104,7 +191,7 @@ def category_page(cat):
     desc = "".join(f"<p>{esc(p)}</p>" for p in cat["desc"])
     faq = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>" for q, a in cat["faqs"])
     others = "".join(f'<a href="{o["page"]}.html">{svg(o["icon"])}{esc(o["name"])}</a>' for o in CATEGORIES if o["key"] != cat["key"])
-    body = f'''<main class="wrap"><div class="main-col wide"><div class="crumbs"><a href="index.html">Home</a> › {esc(cat["name"])}</div>
+    body = f'''<main id="main" class="wrap"><div class="main-col wide"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a> › <span>{esc(cat["name"])}</span></nav>
 <div class="phead k{k}"><div class="pi">{svg(cat["icon"])}</div><div><h1 class="pt">Free {esc(cat["name"])} Calculators</h1><p class="lead">{len(items)} free calculators. {esc(cat["short"])}.</p></div></div>
 {ad()}
 <div class="catfilter"><input id="q" type="text" placeholder="Search in {esc(cat["name"])}" aria-label="Search" autocomplete="off"><div class="sres hidden" id="qres"></div></div>
@@ -114,7 +201,13 @@ def category_page(cat):
 {ad()}</div></main>'''
     t = f"Free {cat['name']} Calculators – {SITE_NAME}"
     d = f"{len(items)} free online {cat['name'].lower()} calculators. " + cat["short"] + ". Instant, accurate and no sign-up."
-    return page(t, d, cat["page"] + ".html", body, schema=faq_schema(cat["faqs"]))
+    curl = f"{DOMAIN}/{cat['page']}.html"
+    schema = ld({"@type": "CollectionPage", "@id": curl + "#webpage", "url": curl, "name": t, "description": d, "inLanguage": "en", "isPartOf": {"@id": DOMAIN + "/#website"}, "breadcrumb": {"@id": curl + "#breadcrumb"}},
+                crumb_obj([("Home", DOMAIN + "/"), (cat["name"], curl)]) | {"@id": curl + "#breadcrumb"},
+                {"@type": "ItemList", "name": cat["name"] + " calculators", "numberOfItems": len(items),
+                 "itemListElement": [{"@type": "ListItem", "position": n, "name": x["name"], "url": f"{DOMAIN}/{x['slug']}.html"} for n, x in enumerate(items, 1)]},
+                faq_obj(cat["faqs"]))
+    return page(t, d, cat["page"] + ".html", body, schema=schema)
 
 def home():
     e = emi_f(2500000, 8.75, 20)
@@ -137,7 +230,7 @@ def home():
              ("phone", "k3", "Works everywhere", "Clean layout that works on phones, tablets and computers.")]
     fh = "".join(f'<div class="feat"><div class="fi {k}">{svg(ic)}</div><b>{t}</b><p>{d}</p></div>' for ic, k, t, d in feats)
     n = len(CALCS)
-    body = f'''<main>
+    body = f'''<main id="main">
 <section class="hero2"><div class="wrap hero-grid"><div class="hero-l">
 <span class="pill"><svg viewBox="0 0 24 24" width="14" height="14" fill="#222"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>Free · No sign-up · {n} calculators</span>
 <h1>Find the right <em>calculator</em> for every decision</h1>
@@ -163,13 +256,22 @@ def home():
 <div class="step k1"><div class="si">2</div><div><b>Enter your numbers</b><p>Fill in a few fields. Results update as you type.</p></div></div>
 <div class="step k2"><div class="si">3</div><div><b>Read the answer and the formula</b><p>See the result, the breakdown and how it was worked out.</p></div></div></div></section>
 <section class="all" id="all"><div class="sh"><h2>All calculators</h2><div class="search"><input id="q" type="text" placeholder="Search calculators (e.g. EMI, BMI, GST)" aria-label="Search calculators" autocomplete="off"><div class="sres hidden" id="qres"></div></div></div>{secs}</section>{ad()}</div></main>'''
-    return page(f"{SITE_NAME} – Free Online Calculators: Finance, Health, Math, Dates & Units",
+    return page(f"{SITE_NAME} – Free Online Calculators for Finance, Health & More",
                 f"{n} free online calculators: EMI, SIP, income tax, BMI, percentage, date difference, unit converters, construction and more. Instant, accurate, no sign-up.",
-                "index.html", body, home=True)
+                "index.html", body, home=True, schema=ld(
+        {"@type": "WebSite", "@id": DOMAIN + "/#website", "url": DOMAIN + "/", "name": SITE_NAME, "inLanguage": "en", "publisher": {"@id": DOMAIN + "/#org"}},
+        {"@type": "Organization", "@id": DOMAIN + "/#org", "name": SITE_NAME, "url": DOMAIN + "/"},
+        {"@type": "WebPage", "@id": DOMAIN + "/#webpage", "url": DOMAIN + "/", "name": SITE_NAME, "isPartOf": {"@id": DOMAIN + "/#website"}, "inLanguage": "en"},
+        {"@type": "ItemList", "name": "Calculator categories", "numberOfItems": len(CATEGORIES),
+         "itemListElement": [{"@type": "ListItem", "position": n, "name": c["name"], "url": f"{DOMAIN}/{c['page']}.html"} for n, c in enumerate(CATEGORIES, 1)]}))
 
 def simple(slug, title, html):
-    body = f'<main class="wrap"><div class="plain"><h1 class="pt" style="margin:40px 0 18px">{title}</h1><article class="txt">{html}</article></div></main>'
-    return page(f"{title} – {SITE_NAME}", title, slug + ".html", body)
+    body = f'<main id="main" class="wrap"><div class="plain"><h1 class="pt" style="margin:40px 0 18px">{title}</h1><article class="txt">{html}</article></div></main>'
+    desc = {"about": f"About {SITE_NAME}: free, fast and private online calculators for money, health, math, dates, units and everyday needs.",
+            "contact": f"Contact {SITE_NAME} with questions, feedback or calculator requests. We read every message.",
+            "disclaimer": f"{SITE_NAME} disclaimer: calculator results are estimates for information only and are not financial, tax, legal or medical advice.",
+            "privacy-policy": f"{SITE_NAME} privacy policy: how calculator inputs, cookies, advertising and analytics are handled."}[slug]
+    return page(f"{title} – {SITE_NAME}", desc, slug + ".html", body)
 
 PAGES = {
  "about": ("About Us", f"<p>{SITE_NAME} is a collection of free online calculators for everyday money, health, math and conversion needs. Our goal is to give you a fast, clear answer along with the formula behind it.</p><p>All calculations run in your browser. We do not store the numbers you enter.</p><p>Spotted a mistake or have an idea for a new calculator? Please <a href=\"contact.html\"><u>contact us</u></a>.</p>"),
@@ -220,7 +322,7 @@ def main():
     files["app.js"] = js
     idx = [[c["name"], c["slug"] + ".html", c["slug"].replace("-", " ") + " " + c["short"], CAT[c["cat"]]["name"], c["short"]] for c in CALCS]
     files["index.js"] = "window.IDX=" + json.dumps(idx, ensure_ascii=False) + ";"
-    urls = [f"{DOMAIN}/"] + [f"{DOMAIN}/{k}" for k in files if k.endswith(".html") and k != "index.html"]
+    urls = [f"{DOMAIN}/"] + [f"{DOMAIN}/{k}" for k in files if k.endswith(".html") and k not in ("index.html", "404.html")]
     today = datetime.date.today().isoformat()
     cat_pages = {c["page"] + ".html" for c in CATEGORIES}
     def entry(u):
@@ -230,10 +332,26 @@ def main():
         pr = "1.0" if home_ else ("0.3" if legal else ("0.9" if leaf in cat_pages else "0.8"))
         return f"  <url>\n    <loc>{u}</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>{'weekly' if home_ else 'monthly'}</changefreq>\n    <priority>{pr}</priority>\n  </url>\n"
     files["sitemap.xml"] = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(entry(u) for u in urls) + "</urlset>\n"
+    files["404.html"] = page(f"Page not found – {SITE_NAME}", "Sorry, the page you are looking for was not found on CalcHub. Browse our free online calculators from the home page.", "404.html",
+        '<main id="main" class="wrap"><div class="plain"><h1 class="pt" style="margin:40px 0 18px">Page not found</h1><article class="txt"><p>Sorry, we could not find that page. Try the <a href="index.html"><u>home page</u></a> or pick a category from the menu.</p></article></div></main>'
+    ).replace('<meta name="robots" content="index,follow,max-image-preview:large">', '<meta name="robots" content="noindex,follow">')
     files["robots.txt"] = f"User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n"
     if ADSENSE_CLIENT:
         files["ads.txt"] = f"google.com, {ADSENSE_CLIENT.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n"
+    kw = ["# CalcHub keyword mapping (generated by build.py)\n", "| Page | Primary keyword | Secondary / long-tail keywords |", "|---|---|---|"]
+    for c in CALCS:
+        p, sec = keywords(c)
+        kw.append(f"| {c['slug']}.html | {p} | {'; '.join(sec)} |")
+    if not only:
+        with open(os.path.join(ROOT, "SEO_KEYWORDS.md"), "w", encoding="utf-8") as f:
+            f.write("\n".join(kw) + "\n")
+    with open(os.path.join(ROOT, "assets", "og-image.png"), "rb") as f:
+        files["og-image.png"] = f.read()
     for k, v in files.items():
+        if isinstance(v, bytes):
+            with open(os.path.join(out, k), "wb") as f:
+                f.write(v)
+            continue
         with open(os.path.join(out, k), "w", encoding="utf-8") as f:
             f.write(v)
     print(len(CALCS), "calculators,", len(files), "files ->", out)
