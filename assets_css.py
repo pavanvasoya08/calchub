@@ -203,3 +203,21 @@ input[type=range]{width:100%;min-height:32px;accent-color:var(--sage)}
  .chips a{padding:9px 12px}
 }
 '''
+
+CSS += r'''
+/* categories dropdown (EduLink style mega menu) */
+details.dd summary{transition:color .15s}
+details.dd summary:hover,details.dd[open] summary{color:var(--sage-d);text-decoration:underline;text-underline-offset:4px}
+details.dd summary:after{border-color:var(--sage-d);width:7px;height:7px}
+details.dd .menu{top:46px;left:50%;transform:translateX(-30%);display:grid;grid-template-columns:1fr 1fr;gap:6px 36px;width:max-content;min-width:520px;padding:28px 32px;background:#fff;border:1.5px solid var(--dark);border-radius:14px;box-shadow:5px 5px 0 var(--dark)}
+details.dd .mcol{display:flex;flex-direction:column;gap:12px}
+details.dd .mcol h4{margin:0;font-size:1.05rem;font-weight:700;color:var(--dark)}
+details.dd .mcol h4:not(:first-child){margin-top:12px}
+details.dd .menu a{display:block;padding:0;border-radius:0;font-size:.88rem;font-weight:400;color:var(--dark);white-space:nowrap}
+details.dd .menu a:hover{background:none;color:var(--sage-d);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:600px){details.dd .menu{position:fixed;left:4vw;right:4vw;top:72px;transform:none;width:auto;min-width:0;grid-template-columns:1fr;padding:20px 22px;max-height:calc(100vh - 90px);overflow:auto}}
+'''
+
+CSS += r'''
+@media(max-width:600px){details.dd .menu{gap:18px}}
+'''
