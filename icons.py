@@ -49,26 +49,13 @@ P = {
  "lock": '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
  "phone": '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
  "wallet": '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1"/>',
+ "building": '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+ "cart": '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11l2-8H6"/>',
+ "monitor": '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
 }
-
-SLUG = {
- "emi-calculator": "calculator", "home-loan-eligibility-calculator": "clipboard", "sip-calculator": "trend",
- "lumpsum-calculator": "briefcase", "fd-calculator": "bank", "rd-calculator": "cal-check", "ppf-calculator": "shield",
- "compound-interest-calculator": "repeat", "simple-interest-calculator": "plus-circle", "cagr-calculator": "bars",
- "swp-calculator": "arrow-down", "inflation-calculator": "arrow-up", "savings-goal-calculator": "target", "roi-calculator": "dollar",
- "gst-calculator": "receipt", "hra-calculator": "home", "gratuity-calculator": "gift", "hourly-to-salary-calculator": "clock",
- "discount-calculator": "tag", "tip-calculator": "utensils", "profit-margin-calculator": "pie", "break-even-calculator": "scale",
- "commission-calculator": "users", "bmi-calculator": "scale", "bmr-calculator": "flame", "ideal-weight-calculator": "user",
- "body-fat-calculator": "ruler", "pregnancy-due-date-calculator": "baby", "percentage-calculator": "percent",
- "average-calculator": "divide", "standard-deviation-calculator": "wave", "age-calculator": "hourglass",
- "date-difference-calculator": "calendar", "cgpa-to-percentage-calculator": "cap", "pythagorean-theorem-calculator": "triangle",
- "area-calculator": "shapes", "speed-distance-time-calculator": "route", "fuel-cost-calculator": "fuel",
- "electricity-bill-calculator": "bolt", "length-converter": "ruler", "weight-converter": "weight", "area-converter": "shapes",
- "speed-converter": "gauge", "volume-converter": "beaker", "temperature-converter": "thermo",
-}
-CAT = {"Loans & Investments": "trend", "Tax, Salary & Business": "receipt", "Health & Fitness": "heart", "Math & Everyday": "calculator", "Unit Converters": "ruler"}
 
 
 def svg(key, cls=""):
-    return (f'<svg{(" class=%r" % cls).replace(chr(39), chr(34)) if cls else ""} viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" '
+    c = f' class="{cls}"' if cls else ""
+    return (f'<svg{c} viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" '
             f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{P[key]}</svg>')

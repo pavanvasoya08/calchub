@@ -24,3 +24,10 @@ Free online calculators website: 45 calculators (loans & investments, tax & busi
 1. Add a `calc(...)` block in `content.py` (fields, explanation, FAQs).
 2. Add its logic as `C.<name>` in `assets_js.py`.
 3. Add an icon mapping in `icons.py`, then rebuild.
+
+
+## Structure (v2: 141 calculators, 10 categories)
+- `core.py` config, categories, field helpers, `calc()` registry
+- `calcs/<category>.py` calculator definitions; `js/NN_<category>.js` their formulas
+- `build.py` generates everything into `docs/` (`python3 build.py`; `--out DIR --only module1,module2` for partial builds)
+- `tests/check_pages.py DIR` browser test of every page
