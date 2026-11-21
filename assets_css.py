@@ -228,3 +228,11 @@ details.dd .mcol{gap:14px}
 details.dd .menu a.on{color:var(--sage-d)}
 @media(max-width:600px){details.dd .menu{grid-template-columns:1fr 1fr;gap:0 16px;padding:20px 18px}details.dd .menu a{white-space:normal;font-size:.84rem}}
 '''
+
+CSS += r'''
+nav.main details.dd{background:none;border:0;border-radius:0;padding:0;margin:0}
+nav.main details.dd summary{font-weight:500;font-size:.82rem;line-height:inherit;color:inherit}
+nav.main details.dd summary:hover,nav.main details.dd[open] summary{color:var(--sage-d);text-decoration:none}
+nav.main details.dd summary:after{width:6px;height:6px;border-color:currentColor;margin-left:2px}
+nav.main details.dd .menu{top:34px}
+'''
