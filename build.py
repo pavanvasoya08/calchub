@@ -149,7 +149,7 @@ def seo_desc(c):
         d = f"{c['lead'].rstrip('.')}. Free, instant and accurate."
     return d[:158]
 
-SHARE_PAGES = {"emi-calculator"}   # pilot: social sharing only on these calculator pages
+SHARE_PAGES = None   # None = every calculator page; or a set of slugs to limit sharing to those pages
 SHARE_ICONS = {   # outline icons (24x24, stroke): inner svg markup
  "wa": '<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>',
  "fb": '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
@@ -204,12 +204,12 @@ def calc_page(c):
     body = f'''<main id="main" class="wrap"><div class="main-col"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a> › <a href="{cat["page"]}.html">{esc(cat["name"])}</a> › <span>{esc(c["name"])}</span></nav>
 <div class="phead k{k}"><div class="pi">{svg(c["icon"])}</div><div><h1 class="pt">{esc(c["h1"])}</h1><p class="lead">{esc(c["lead"])}</p></div></div>
 {ad()}
-<section class="box" id="calc" aria-label="{esc(c["name"])}"><div class="row">{c["fields"]}</div><div class="res" id="out" aria-live="polite"></div></section>{share_html(url, c["name"] + " | " + SITE_NAME, desc) if c["slug"] in SHARE_PAGES else ""}
+<section class="box" id="calc" aria-label="{esc(c["name"])}"><div class="row">{c["fields"]}</div><div class="res" id="out" aria-live="polite"></div></section>{share_html(url, c["name"] + " | " + SITE_NAME, desc) if (SHARE_PAGES is None or c["slug"] in SHARE_PAGES) else ""}
 {ad()}
 <article class="txt">{c["body"]}{extra}<h2>Frequently asked questions</h2>{faq}
 <h2>Related calculators</h2><div class="chips">{rel}</div><p style="margin-top:14px"><a class="link" href="{cat["page"]}.html">View all {esc(cat["name"])} calculators →</a></p></article>
 {ad()}</div></main>'''
-    shared = c["slug"] in SHARE_PAGES
+    shared = (SHARE_PAGES is None or c["slug"] in SHARE_PAGES)
     return page(title, desc, c["slug"] + ".html", body, c["js"], c["head"] + ('<link rel="stylesheet" href="share.css">' if shared else ""), schema,
                 tail='<script src="share.js" defer></script>' if shared else "")
 
