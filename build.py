@@ -149,6 +149,24 @@ def seo_desc(c):
         d = f"{c['lead'].rstrip('.')}. Free, instant and accurate."
     return d[:158]
 
+ASK_PAGES = {"emi-calculator"}   # pilot: "Ask Us Anything" form only on these calculator pages
+ASK_ENDPOINT = os.environ.get("CALCHUB_ASK_URL", "PASTE_APPS_SCRIPT_WEB_APP_URL_HERE")   # Google Apps Script Web App URL (ends with /exec)
+ASK_CATEGORIES = ["Calculation help", "Formula or result question", "Report a problem", "Suggest a new calculator", "Other"]
+
+def ask_html(c, url):
+    opts = "".join(f'<option value="{esc(o)}">{esc(o)}</option>' for o in ASK_CATEGORIES)
+    return (f'''<section class="ask box" id="ask" aria-labelledby="ask-h"><h2 id="ask-h">Ask Us Anything</h2>
+<p class="sub">Have a question about the {esc(c["name"])} or its result? Send it to us and we will reply by email.</p>
+<form id="ask-form" novalidate data-endpoint="{esc(ASK_ENDPOINT)}" data-calc="{esc(c["name"])}" data-url="{esc(url)}">
+<div class="row"><div class="fld"><label for="ask-name">Your name</label><input type="text" id="ask-name" name="name" maxlength="80" autocomplete="name" required></div>
+<div class="fld"><label for="ask-email">Email address</label><input type="email" id="ask-email" name="email" maxlength="254" autocomplete="email" inputmode="email" required></div>
+<div class="fld wide"><label for="ask-cat">Question category</label><select id="ask-cat" name="category" required><option value="">Choose a category</option>{opts}</select></div>
+<div class="fld wide"><label for="ask-question">Your question</label><textarea id="ask-question" name="question" maxlength="1000" rows="5" required></textarea><span class="count" id="ask-count">0 / 1000</span></div>
+<div class="hp" aria-hidden="true"><label for="ask-web">Leave this field empty</label><input type="text" id="ask-web" name="website" tabindex="-1" autocomplete="off"></div></div>
+<div class="act"><button type="submit" class="btn">Send question</button></div>
+<p class="msg" id="ask-msg" role="status" aria-live="polite" hidden></p>
+<p class="note2">We use your email only to reply to your question. See our <a href="privacy-policy.html"><u>Privacy Policy</u></a>.</p></form></section>''')
+
 SHARE_PAGES = None   # None = every calculator page; or a set of slugs to limit sharing to those pages
 SHARE_ICONS = {   # outline icons (24x24, stroke): inner svg markup
  "wa": '<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>',
@@ -207,11 +225,12 @@ def calc_page(c):
 <section class="box" id="calc" aria-label="{esc(c["name"])}"><div class="row">{c["fields"]}</div><div class="res" id="out" aria-live="polite"></div></section>{share_html(url, c["name"] + " | " + SITE_NAME, desc) if (SHARE_PAGES is None or c["slug"] in SHARE_PAGES) else ""}
 {ad()}
 <article class="txt">{c["body"]}{extra}<h2>Frequently asked questions</h2>{faq}
-<h2>Related calculators</h2><div class="chips">{rel}</div><p style="margin-top:14px"><a class="link" href="{cat["page"]}.html">View all {esc(cat["name"])} calculators →</a></p></article>
+<h2>Related calculators</h2><div class="chips">{rel}</div><p style="margin-top:14px"><a class="link" href="{cat["page"]}.html">View all {esc(cat["name"])} calculators →</a></p></article>{ask_html(c, url) if c["slug"] in ASK_PAGES else ""}
 {ad()}</div></main>'''
     shared = (SHARE_PAGES is None or c["slug"] in SHARE_PAGES)
-    return page(title, desc, c["slug"] + ".html", body, c["js"], c["head"] + ('<link rel="stylesheet" href="share.css">' if shared else ""), schema,
-                tail='<script src="share.js" defer></script>' if shared else "")
+    asked = c["slug"] in ASK_PAGES
+    return page(title, desc, c["slug"] + ".html", body, c["js"], c["head"] + ('<link rel="stylesheet" href="share.css">' if shared else "") + ('<link rel="stylesheet" href="ask.css">' if asked else ""), schema,
+                tail=('<script src="share.js" defer></script>' if shared else "") + ('<script src="ask.js" defer></script>' if asked else ""))
 
 def category_page(cat):
     k = CAT_INDEX[cat["key"]]
@@ -374,7 +393,7 @@ def main():
     if not only:
         with open(os.path.join(ROOT, "SEO_KEYWORDS.md"), "w", encoding="utf-8") as f:
             f.write("\n".join(kw) + "\n")
-    for a_ in ("og-image.png", "share.css", "share.js"):
+    for a_ in ("og-image.png", "share.css", "share.js", "ask.css", "ask.js"):
         with open(os.path.join(ROOT, "assets", a_), "rb") as f:
             files[a_] = f.read()
     for k, v in files.items():
